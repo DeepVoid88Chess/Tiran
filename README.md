@@ -2,11 +2,11 @@
 
 **TIRAN - Designed to make coding easier.**
 
-TIRAN is a universal coding and translation layer. You write TIRAN code once, choose a target language, and TIRAN generates real code for that language.
+TIRAN is a universal coding and translation layer. You write TIRAN code once, choose a target language, and TIRAN generates real target-language code.
 
-## TIRAN v0.1
+## TIRAN v0.2
 
-The first version supports:
+TIRAN currently supports:
 
 - Luau
 - Lua
@@ -16,36 +16,86 @@ The first version supports:
 - Java
 - C#
 
-### Example
+## Features
 
-TIRAN:
+### Choose a language
 
 ```tiran
 convert luau
+```
 
+### Say something
+
+```tiran
 say "Hello from TIRAN!"
 ```
 
-Output:
+Luau output:
 
 ```lua
 print("Hello from TIRAN!")
 ```
 
-## Run it
+### Variables
+
+```tiran
+name = "Jackson"
+score = 100
+say name
+```
+
+### Conditions
+
+```tiran
+if score > 50:
+    say "Great score!"
+else:
+    say "Keep going!"
+end
+```
+
+### Loops
+
+```tiran
+repeat 5:
+    say "Hello!"
+end
+```
+
+### Functions
+
+```tiran
+function greet(name):
+    say name
+end
+
+call greet("TIRAN")
+```
+
+## Run TIRAN
 
 Requires Python 3.
+
+Compile and print:
 
 ```text
 python tiran.py examples/hello.tiran
 ```
 
-To save the generated code:
+Compile and save:
 
 ```text
 python tiran.py examples/hello.tiran hello.lua
 ```
 
+Try the larger example:
+
+```text
+python tiran.py examples/features.tiran
+```
+
 ## Roadmap
 
-TIRAN will grow from this tiny compiler into a real language and translation system, with variables, functions, conditions, loops, and richer target-language generation.
+TIRAN is an evolving compiler. Future releases can add a stronger parser, richer expressions, Roblox-specific commands, more target languages, a test suite, and a dedicated editor.
+
+**TIRAN - Designed to make coding easier.**
