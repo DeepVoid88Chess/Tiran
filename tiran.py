@@ -308,22 +308,54 @@ def compile_tiran(source: str, target: str) -> str:
 
 
 def wrap_program(body: str, target: str) -> str:
+    if target not in {"java", "csharp"}:
+        return body + ("\n" if body else "")
+
+    lines = body.splitlines()
+    functions = []
+    main_lines = []
+    i = 0
+    while i < len(lines):
+        if lines[i].startswith("static void "):
+            function = [lines[i]]
+            depth = lines[i].count("{") - lines[i].count("}")
+            i += 1
+            while i < len(lines) and depth > 0:
+                function.append(lines[i])
+                depth += lines[i].count("{") - lines[i].count("}")
+                i += 1
+            if depth != 0:
+                raise TiranError("Internal error: unbalanced generated function.")
+            functions.extend(function)
+            functions.append("")
+        else:
+            main_lines.append(lines[i])
+            i += 1
+
     if target == "java":
-        return (
-            "public class Main {\n"
-            "    public static void main(String[] args) {\n"
-            + "\n".join("        " + line for line in body.splitlines())
-            + "\n    }\n}\n"
-        )
-    if target == "csharp":
-        return (
-            "using System;\n\n"
-            "public class Program {\n"
-            "    public static void Main() {\n"
-            + "\n".join("        " + line for line in body.splitlines())
-            + "\n    }\n}\n"
-        )
-    return body + ("\n" if body else "")
+        parts = ["public class Main {"]
+        if functions:
+            parts.extend("    " + line if line else "" for line in functions)
+        parts.extend([
+            "    public static void main(String[] args) {",
+            *("        " + line for line in main_lines),
+            "    }",
+            "}",
+            "",
+        ])
+        return "\n".join(parts)
+
+    parts = ["using System;", "", "public class Program {"]
+    if functions:
+        parts.extend("    " + line if line else "" for line in functions)
+    parts.extend([
+        "    public static void Main() {",
+        *("        " + line for line in main_lines),
+        "    }",
+        "}",
+        "",
+    ])
+    return "\n".join(parts)
 
 
 def main() -> int:
