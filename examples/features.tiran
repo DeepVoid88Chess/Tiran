@@ -1,0 +1,23 @@
+# TIRAN feature example
+convert luau
+
+name = "TIRAN"
+number = 5
+
+say name
+
+if number > 3:
+    say "Number is greater than 3"
+else:
+    say "Number is 3 or less"
+end
+
+repeat 3:
+    say "Hello"
+end
+
+function greet(person):
+    say person
+end
+
+call greet("Roblox")
