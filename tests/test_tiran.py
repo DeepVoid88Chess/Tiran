@@ -24,11 +24,34 @@ class TiranTests(unittest.TestCase):
     def test_roblox(self):
         out = compile_tiran(
             'convert luau\ncreate part block\n'
-            'set block.name = "X"\nset block.anchored = true'
+            'set block.name = "X"\nset block.anchored = true\n'
+            'function onTouched(hit):\n    say hit\nend\n'
+            'connect block.Touched to onTouched\nwait 1\ndestroy block'
         )
         self.assertIn('Instance.new("Part")', out)
         self.assertIn('block.Name = "X"', out)
         self.assertIn('block.Anchored = true', out)
+        self.assertIn('block.Touched:Connect(onTouched)', out)
+        self.assertIn('task.wait(1)', out)
+        self.assertIn('block:Destroy()', out)
+
+    def test_roblox_instance_types(self):
+        out = compile_tiran(
+            'convert luau\ncreate folder folder1\ncreate model model1\n'
+            'create remoteevent event1\ncreate remote_function fn1\n'
+            'create bindableevent signal1'
+        )
+        self.assertIn('Instance.new("Folder")', out)
+        self.assertIn('Instance.new("Model")', out)
+        self.assertIn('Instance.new("RemoteEvent")', out)
+        self.assertIn('Instance.new("RemoteFunction")', out)
+        self.assertIn('Instance.new("BindableEvent")', out)
+
+    def test_elseif(self):
+        out = compile_tiran(
+            'convert luau\nif false:\n    say "a"\nelseif true:\n    say "b"\nelse:\n    say "c"\nend'
+        )
+        self.assertIn('elseif true then', out)
 
     def test_unclosed_block(self):
         with self.assertRaises(TiranError):
