@@ -314,6 +314,20 @@ class Compiler:
         self.blocks.append("function")
 
     def branch(self, node: Node) -> None:
+        depth = len(self.blocks) - 1
+        if node.text.startswith("catch"):
+            if not self.blocks or self.blocks[-1] != "try":
+                raise TiranError(f"Line {node.line}: catch must follow try.")
+            arg = node.text[5:-1].strip() or "error"
+            if self.target == "luau":
+                self.emit("end)", depth)
+                self.emit("if not __tiran_ok then", depth)
+                self.blocks[-1] = "catch"
+            elif self.target == "python":
+                self.emit(f"except Exception as {arg}:", depth)
+            else:
+                self.emit(f"}} catch (Exception {arg}) {{", depth)
+            return
         if not self.blocks or self.blocks[-1] != "if":
             raise TiranError(f"Line {node.line}: branch must follow if.")
         depth = len(self.blocks) - 1
@@ -332,16 +346,6 @@ class Compiler:
                 self.emit("else:", depth)
             else:
                 self.emit("} else {", depth)
-        elif node.text.startswith("catch"):
-            arg = node.text[5:-1].strip() or "error"
-            if self.target == "luau":
-                self.emit("end", depth)
-                self.emit("if not __tiran_ok then", depth)
-            elif self.target == "python":
-                self.emit(f"except Exception as {arg}:", depth)
-            else:
-                self.emit(f"}} catch (Exception {arg}) {{", depth)
-
     def special(self, node: Node) -> bool:
         line, n = node.text, node.line
 
@@ -520,7 +524,10 @@ class Compiler:
 
 
 def compile_tiran(source: str, target: str | None = None) -> str:
-    program = parse_tiran(source)
+    try:
+        program = parse_tiran(source)
+    except ParseError as exc:
+        raise TiranError(str(exc)) from exc
     if target is None:
         target = program.target
     if target is None:
