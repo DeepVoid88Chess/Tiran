@@ -45,7 +45,7 @@ class Compiler:
     def say(self,v):
         v=expr(v,self.target)
         if self.target=="html":
-            if len(v)>=2 and v[0]==v[-1] and v[0] in {"\\\"","\\\'"}:
+            if len(v)>=2 and v[0]==v[-1] and v[0] in {"\"", "'"}:
                 text=v[1:-1].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
                 self.emit(f"<p>{text}</p>")
             else:
