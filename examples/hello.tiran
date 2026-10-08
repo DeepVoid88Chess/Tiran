@@ -1,4 +1,2 @@
-# TIRAN example
 convert luau
-
 say "Hello from TIRAN!"
