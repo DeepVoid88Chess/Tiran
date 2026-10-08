@@ -1,0 +1,10 @@
+convert python
+let score = 3
+if score > 1:
+    say "high"
+else:
+    say "low"
+end
+repeat score:
+    say "loop"
+end
