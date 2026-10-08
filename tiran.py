@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import json
 from pathlib import Path
+from tiran_syntax import ParseError, ast_dict, parse_tiran
 
 TARGETS={"luau":".luau","lua":".lua","python":".py","javascript":".js","typescript":".ts","java":".java","csharp":".cs","html":".html"}
 ALIASES={"js":"javascript","ts":"typescript","cs":"csharp"}
@@ -250,11 +252,14 @@ class Compiler:
         return "\n".join(self.lines)+"\n"
 
 def compile_tiran(source,target=None):
+    program=parse_tiran(source)
     if target is None:
         m=re.search(r"^\s*convert\s+([\w+-]+)\s*$",source,re.M|re.I)
         if not m: raise TiranError("No target selected. Add 'convert <language>' or use --target.")
         target=m.group(1)
     target=target_name(target)
+    if program.target is not None and target_name(program.target) != target:
+        raise TiranError(f"Target mismatch: source selects {program.target!r} but compiler requested {target!r}.")
     c=Compiler(target)
     for n,raw in enumerate(source.splitlines(),1):
         line=raw.strip()
@@ -283,13 +288,20 @@ def main():
     p.add_argument("-o","--output")
     p.add_argument("-t","--target")
     p.add_argument("--format",action="store_true")
+    p.add_argument("--check",action="store_true",help="validate and compile without emitting source")
+    p.add_argument("--ast",action="store_true",help="print the parsed syntax tree as JSON")
     args=p.parse_args()
     if not args.source:
         p.error("source file is required")
     path=Path(args.source)
     try:
         source=path.read_text(encoding="utf-8")
-        if args.format:
+        if args.ast:
+            result=json.dumps(ast_dict(parse_tiran(source)),indent=2)+"\n"
+        elif args.check:
+            compile_tiran(source,args.target)
+            result="TIRAN OK\n"
+        elif args.format:
             result=format_tiran(source)
         else:
             result=compile_tiran(source,args.target)
@@ -298,7 +310,7 @@ def main():
         else:
             print(result,end="")
         return 0
-    except (OSError,TiranError) as e:
+    except (OSError,TiranError,ParseError) as e:
         print(f"TIRAN ERROR: {e}",file=sys.stderr)
         return 1
 
