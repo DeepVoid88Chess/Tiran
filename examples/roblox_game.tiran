@@ -1,0 +1,19 @@
+# TIRAN Roblox/Luau example
+convert luau
+
+service Players = Players
+create folder monsters
+create part block
+
+set block.name = "MonsterBlock"
+set block.anchored = true
+set block.position = Vector3.new(0, 5, 0)
+set block.parent = workspace
+
+function onTouched(hit):
+    say hit
+end
+
+connect block.Touched to onTouched
+wait 1
+destroy block
