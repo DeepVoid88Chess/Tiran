@@ -11,7 +11,7 @@ TIRAN includes:
 - A command-line compiler
 - Luau, Lua, Python, JavaScript, TypeScript, Java, C#, and HTML targets
 - Variables, assignment, conditionals, loops, functions, calls, returns, break, and continue
-- Roblox/Luau helpers for Parts and services
+- Roblox/Luau helpers for Parts, folders, models, remotes, services, events, waiting, and destruction
 - An exactly **11,000-function standard library**
 - Deterministic compiler errors with source line numbers
 - Examples, tests, and GitHub Actions CI
@@ -21,18 +21,18 @@ TIRAN includes:
 
 The file tiran_stdlib.py contains exactly 11,000 registered callable built-ins.
 
-They are real functions, not empty placeholders. The library has 23 core functions such as abs, sqrt, length, join, and replace, plus 10,977 parameterized functions across documented families.
+They are real Python callables, not empty placeholders. The library has core operations, parameterized operations, transforms, and named operation pipelines. Every registered name is documented in `docs/BUILTINS.md`.
 
 Examples:
 
     from tiran_stdlib import get_builtin
 
-    get_builtin("number_add_5")(10)       # 15
-    get_builtin("text_repeat_3")("yo")    # yoyoyo
-    get_builtin("text_prefix_4")("TIRAN") # TIRA
-    get_builtin("list_take_2")([1,2,3])   # [1,2]
+    get_builtin("number_add")(10, 5)       # 15
+    get_builtin("text_repeat")("yo", 3)    # yoyoyo
+    get_builtin("text_prefix")("TIRAN", 4) # TIRA
+    get_builtin("list_take")([1,2,3], 2)   # [1, 2]
 
-The generated families are deliberately parameterized so the 11,000 entries have concrete behavior while the implementation stays maintainable.
+The registry deliberately avoids baked-in numeric suffix names such as `number_add_5`; parameters belong in function arguments. The 11,000 names are documented in `docs/BUILTINS.md`.
 
 ## Language
 
@@ -96,6 +96,13 @@ Supported targets:
     set block.anchored = true
     set block.position = Vector3.new(0, 5, 0)
     set block.parent = workspace
+
+    function onTouched(hit):
+        say hit
+    end
+    connect block.Touched to onTouched
+    wait 1
+    destroy block
 
 This generates real Luau:
 
