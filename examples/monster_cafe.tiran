@@ -1,0 +1,47 @@
+# Monster Café gameplay skeleton written in TIRAN
+convert luau
+
+service Players = Players
+service ReplicatedStorage = ReplicatedStorage
+
+create folder Monsters
+create folder Food
+create remoteevent OrderEvent
+create remoteevent RebellionEvent
+
+parent Monsters to workspace
+parent Food to workspace
+parent OrderEvent to ReplicatedStorage
+parent RebellionEvent to ReplicatedStorage
+
+create part Counter
+set Counter.name = "CafeCounter"
+set Counter.anchored = true
+set Counter.position = Vector3.new(0, 2, 0)
+parent Counter to workspace
+
+let lives = 3
+let day = 1
+let money = 0
+
+function serve_order(player, order):
+    say order
+    fire OrderEvent order
+end
+
+function start_night():
+    say "Night started"
+    fire RebellionEvent day
+end
+
+function lose_life():
+    lives = lives - 1
+    say lives
+end
+
+if lives > 0:
+    say "Café open!"
+end
+
+wait 1
+destroy Counter
