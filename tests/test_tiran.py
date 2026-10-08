@@ -184,7 +184,7 @@ let picked = list_take([1, 2, 3], 2)
 
     def test_error_codes_are_stable_and_documented(self):
         from tiran_errors import ERRORS, classify_error
-        self.assertGreaterEqual(len(ERRORS), 90)
+        self.assertGreaterEqual(len(ERRORS), 95)
         self.assertEqual(classify_error("Unsupported target 'wat'.").code, "E2001")
         self.assertIn("E1002", ERRORS)
         self.assertIn("E8005", ERRORS)
