@@ -60,7 +60,7 @@ let player = game.Players.LocalPlayer
 
     def test_expression_target_lowering(self):
         out = compile_tiran('convert python\nlet ok = true and not false\nlet power = 2 ^ 3')
-        self.assertIn("ok = (True and (notFalse))", out)
+        self.assertIn("ok = (True and (not False))", out)
         self.assertIn("power = (2 ** 3)", out)
     def test_python_loop(self):
         out=compile_tiran('convert python\nlet n = 2\nrepeat n:\n    say "x"\nend')
