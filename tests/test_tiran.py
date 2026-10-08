@@ -163,7 +163,7 @@ call list_take([1, 2, 3], 2)
         self.assertIn("from tiran_stdlib import get_builtin as __tiran_builtin", out)
         self.assertIn('__tiran_builtin("number_add")(10, 5)', out)
         self.assertIn('__tiran_builtin("text_trim_then_upper")("  tiran  ")', out)
-        self.assertIn('__tiran_builtin("list_take")([1, 2, 3])', out)
+        self.assertIn('__tiran_builtin("list_take")([1, 2, 3], 2)', out)
 
     def test_compiled_python_executes_tiran_builtins(self):
         source = """convert python
