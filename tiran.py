@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 
 from tiran_expr import Expr
+from tiran_stdlib import BUILTINS as TIRAN_BUILTINS
 from tiran_syntax import Node, ParseError, ast_dict, parse_tiran
 
 TARGETS = {
@@ -117,8 +118,15 @@ def lower_expr(node: Expr, target: str) -> str:
         return f"({left} {op} {right})"
 
     if kind == "call":
-        callee = lower_expr(node.children[0], target)
+        callee_node = node.children[0]
         args = ", ".join(lower_expr(child, target) for child in node.children[1:])
+        if (
+            target == "python"
+            and callee_node.kind == "name"
+            and callee_node.value in TIRAN_BUILTINS
+        ):
+            return f'__tiran_builtin("{callee_node.value}")({args})'
+        callee = lower_expr(callee_node, target)
         return f"{callee}({args})"
 
     if kind == "member":
@@ -181,6 +189,7 @@ class Compiler:
         self.blocks: list[str] = []
         self.declared: set[str] = set()
         self.imports: list[str] = []
+        self.uses_tiran_builtins = False
 
     def emit(self, text: str, depth: int | None = None) -> None:
         d = len(self.blocks) if depth is None else depth
@@ -192,10 +201,25 @@ class Compiler:
 
     def expression(self, node: Node, fallback: str | None = None) -> str:
         if isinstance(node.expression, Expr):
-            return lower_expr(node.expression, self.target)
-        if fallback is None:
+            expression = node.expression
+        elif fallback is not None:
+            expression = _parse_expression_text(fallback, node.line)
+        else:
             raise TiranError(f"Line {node.line}: expression is required.")
-        return lower_expr(_parse_expression_text(fallback, node.line), self.target)
+
+        def uses_builtin(expr: Expr) -> bool:
+            if (
+                expr.kind == "call"
+                and expr.children
+                and expr.children[0].kind == "name"
+                and expr.children[0].value in TIRAN_BUILTINS
+            ):
+                return True
+            return any(uses_builtin(child) for child in expr.children)
+
+        if self.target == "python" and uses_builtin(expression):
+            self.uses_tiran_builtins = True
+        return lower_expr(expression, self.target)
 
     def assign(self, node: Node, name: str, value: str) -> None:
         line = node.line
@@ -258,7 +282,7 @@ class Compiler:
         if match:
             if not isinstance(node.expression, Expr):
                 raise TiranError(f"Line {n}: call requires an expression.")
-            rendered = lower_expr(node.expression, self.target)
+            rendered = self.expression(node)
             suffix = ";" if self.target in {"java", "csharp"} else ""
             self.emit(f"{rendered}{suffix}")
             return True
@@ -520,6 +544,8 @@ class Compiler:
     def finish(self) -> str:
         if self.blocks:
             raise TiranError(f"Unclosed block: {self.blocks[-1]}.")
+        if self.uses_tiran_builtins:
+            self.lines.insert(0, "from tiran_stdlib import get_builtin as __tiran_builtin")
         return "\n".join(self.lines) + "\n"
 
 
