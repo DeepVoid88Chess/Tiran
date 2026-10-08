@@ -1,397 +1,162 @@
-"""TIRAN v1.0
-TIRAN - Designed to make coding easier.
-
-A small, dependency-free compiler for a simple, readable source language.
-TIRAN can generate complete source files for Luau, Lua, Python, JavaScript,
-TypeScript, Java, and C#.
-"""
-
+"""TIRAN v1.0 - readable, dependency-free transpiler."""
 from __future__ import annotations
+import argparse, re, sys
+from pathlib import Path
 
-import argparse
-import ast
-import re
-import sys
-from dataclasses import dataclass
+TARGETS={"luau":".luau","lua":".lua","python":".py","javascript":".js","typescript":".ts","java":".java","csharp":".cs"}
+ALIASES={"js":"javascript","ts":"typescript","cs":"csharp"}
 
+class TiranError(ValueError): pass
 
-TARGETS = {
-    "luau": ".luau",
-    "lua": ".lua",
-    "python": ".py",
-    "javascript": ".js",
-    "typescript": ".ts",
-    "java": ".java",
-    "csharp": ".cs",
-}
+def target_name(value):
+    value=ALIASES.get(value.strip().lower(),value.strip().lower())
+    if value not in TARGETS: raise TiranError(f"Unsupported target '{value}'.")
+    return value
 
-ALIASES = {"js": "javascript", "ts": "typescript", "cs": "csharp"}
+def expr(value,target):
+    value=value.strip()
+    if not value: raise TiranError("An expression is required.")
+    if target=="python":
+        value=re.sub(r"\btrue\b","True",value,flags=re.I)
+        value=re.sub(r"\bfalse\b","False",value,flags=re.I)
+        value=re.sub(r"\b(?:nil|null|nothing)\b","None",value,flags=re.I)
+    elif target in {"javascript","typescript","java","csharp"}:
+        value=re.sub(r"\btrue\b","true",value,flags=re.I)
+        value=re.sub(r"\bfalse\b","false",value,flags=re.I)
+        value=re.sub(r"\b(?:nil|null|nothing)\b","null",value,flags=re.I)
+        value=re.sub(r"\band\b","&&",value); value=re.sub(r"\bor\b","||",value)
+    else:
+        value=re.sub(r"\btrue\b","true",value,flags=re.I)
+        value=re.sub(r"\bfalse\b","false",value,flags=re.I)
+        value=re.sub(r"\b(?:null|nothing)\b","nil",value,flags=re.I)
+    return value
 
-
-class TiranError(ValueError):
-    """A user-friendly TIRAN compile error."""
-
-
-@dataclass
-class Block:
-    kind: str
-
-
-NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-
-
-def validate_name(name: str, line: int) -> str:
-    if not NAME.fullmatch(name):
+def valid_name(name,line):
+    if not re.fullmatch(r"[A-Za-z_]\w*",name):
         raise TiranError(f"Line {line}: invalid name '{name}'.")
     return name
 
-
-def split_top_level(text: str, separator: str = ",") -> list[str]:
-    result, start, depth, quote = [], 0, 0, None
-    for i, char in enumerate(text):
-        if quote:
-            if char == quote and (i == 0 or text[i - 1] != "\\"):
-                quote = None
-        elif char in ""'":
-            quote = char
-        elif char in "([{":
-            depth += 1
-        elif char in ")]}":
-            depth -= 1
-        elif char == separator and depth == 0:
-            result.append(text[start:i].strip())
-            start = i + 1
-    tail = text[start:].strip()
-    if tail:
-        result.append(tail)
-    return result
-
-
-def expr(value: str, target: str) -> str:
-    value = value.strip()
-    if not value:
-        raise TiranError("An expression is required.")
-
-    replacements = [
-        (r"\btrue\b", "True" if target == "python" else "true"),
-        (r"\bfalse\b", "False" if target == "python" else "false"),
-        (r"\bnothing\b|\bnull\b|\bnil\b",
-         "None" if target == "python" else ("null" if target in {"javascript", "typescript"} else "nil")),
-    ]
-    for pattern, replacement in replacements:
-        value = re.sub(pattern, replacement, value, flags=re.IGNORECASE)
-
-    if target in {"javascript", "typescript", "java", "csharp"}:
-        value = re.sub(r"\band\b", "&&", value)
-        value = re.sub(r"\bor\b", "||", value)
-        value = re.sub(r"\bnot\b", "!", value)
-    elif target in {"luau", "lua"}:
-        value = value.replace(" and ", " and ").replace(" or ", " or ")
-    return value
-
-
-def quote(value: str) -> str:
-    try:
-        parsed = ast.literal_eval(value)
-    except (ValueError, SyntaxError) as error:
-        raise TiranError(f"Invalid string: {value}") from error
-    if not isinstance(parsed, str):
-        raise TiranError(f"Expected a string: {value}")
-    return parsed
-
-
-def parse_function_header(text: str, line: int) -> tuple[str, list[str]]:
-    match = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)\((.*)\)", text.strip())
-    if not match:
-        raise TiranError(f"Line {line}: functions need name(arguments).")
-    name = validate_name(match.group(1), line)
-    args = []
-    for item in split_top_level(match.group(2)):
-        if item:
-            args.append(validate_name(item, line))
-    return name, args
-
-
 class Compiler:
-    def __init__(self, target: str):
-        self.target = target
-        self.lines: list[str] = []
-        self.blocks: list[Block] = []
-        self.function_names: set[str] = set()
-
-    def emit(self, text: str, extra_indent: int = 0) -> None:
-        self.lines.append("    " * (len(self.blocks) + extra_indent) + text)
-
-    def close(self, expected: str, line: int) -> None:
-        if not self.blocks or self.blocks[-1].kind != expected:
-            actual = self.blocks[-1].kind if self.blocks else "nothing"
-            raise TiranError(
-                f"Line {line}: expected to close '{expected}', but '{actual}' is open."
-            )
-        self.blocks.pop()
-
-    def say(self, value: str) -> None:
-        value = expr(value, self.target)
-        if self.target in {"luau", "lua", "python", "javascript", "typescript"}:
-            self.emit(f"print({value})")
-        elif self.target == "java":
-            self.emit(f"System.out.println({value});")
-        else:
-            self.emit(f"Console.WriteLine({value});")
-
-    def assign(self, name: str, value: str, line: int) -> None:
-        validate_name(name, line)
-        value = expr(value, self.target)
-        if self.target in {"luau", "lua"}:
-            self.emit(f"local {name} = {value}")
-        elif self.target == "python":
-            self.emit(f"{name} = {value}")
-        elif self.target in {"javascript", "typescript"}:
-            self.emit(f"let {name} = {value};")
-        else:
-            self.emit(f"var {name} = {value};")
-
-    def create_part(self, name: str, line: int) -> None:
-        validate_name(name, line)
-        if self.target == "luau":
-            self.emit(f'local {name} = Instance.new("Part")')
-        elif self.target == "lua":
-            self.emit(f'local {name} = Instance.new("Part")')
-        else:
-            raise TiranError(
-                f"Line {line}: 'create part' is Roblox-specific and requires convert luau."
-            )
-
-    def set_property(self, statement: str, line: int) -> None:
-        match = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)", statement)
-        if not match:
-            raise TiranError(f"Line {line}: use 'set object.property = value'.")
-        if self.target not in {"luau", "lua"}:
-            raise TiranError(f"Line {line}: property setting currently requires convert luau.")
-        obj, prop, value = match.groups()
-        self.emit(f"{obj}.{prop[0].upper() + prop[1:]} = {expr(value, self.target)}")
-
-    def finish(self) -> str:
-        if self.blocks:
-            raise TiranError(f"Unclosed block: {self.blocks[-1].kind}. Add 'end'.")
-        return "\n".join(self.lines)
-
-    def statement(self, line: str, number: int) -> None:
-        if line.startswith("say "):
-            self.say(line[4:].strip())
+    def __init__(self,target):
+        self.target=target_name(target); self.lines=[]; self.blocks=[]; self.declared=set()
+    def emit(self,text,depth=None):
+        d=len(self.blocks) if depth is None else depth
+        self.lines.append("    "*d+text)
+    def say(self,v):
+        v=expr(v,self.target)
+        if self.target in {"luau","lua","python","javascript","typescript"}: self.emit(f"print({v})")
+        elif self.target=="java": self.emit(f"System.out.println({v});")
+        else: self.emit(f"Console.WriteLine({v});")
+    def assign(self,name,value,line):
+        valid_name(name,line); value=expr(value,self.target); new=name not in self.declared
+        if self.target in {"luau","lua"}: self.emit(("local " if new else "")+f"{name} = {value}")
+        elif self.target=="python": self.emit(f"{name} = {value}")
+        elif self.target in {"javascript","typescript"}: self.emit(("let " if new else "")+f"{name} = {value};")
+        else: self.emit(("var " if new else "")+f"{name} = {value};")
+        self.declared.add(name)
+    def begin(self,kind,head,line):
+        h=expr(head,self.target)
+        if kind=="if":
+            self.emit(f"if {h} then" if self.target in {"luau","lua"} else f"if {h}:" if self.target=="python" else f"if ({h}) {{")
+        elif kind=="repeat":
+            if self.target in {"luau","lua"}: self.emit(f"for _ = 1, {h} do")
+            elif self.target=="python": self.emit(f"for _ in range({h}):")
+            else: self.emit(f"for (let i = 0; i < {h}; i++) {{")
+        elif kind=="while":
+            self.emit(f"while {h} do" if self.target in {"luau","lua"} else f"while {h}:" if self.target=="python" else f"while ({h}) {{")
+        self.blocks.append(kind)
+    def function(self,text,line):
+        m=re.fullmatch(r"([A-Za-z_]\w*)\((.*)\)",text.strip())
+        if not m: raise TiranError(f"Line {line}: use function name(args):")
+        name=valid_name(m.group(1),line); args=[valid_name(x.strip(),line) for x in m.group(2).split(",") if x.strip()]
+        a=", ".join(args)
+        if self.target in {"luau","lua"}: self.emit(f"function {name}({a})")
+        elif self.target=="python": self.emit(f"def {name}({a}):")
+        elif self.target in {"javascript","typescript"}: self.emit(f"function {name}({a}) {{")
+        elif self.target=="java": self.emit(f"static Object {name}({', '.join('Object '+x for x in args)}) {{")
+        else: self.emit(f"static object {name}({', '.join('object '+x for x in args)}) {{")
+        self.blocks.append("function")
+    def statement(self,line,n):
+        if line.startswith("say "): return self.say(line[4:])
+        m=re.fullmatch(r"let\s+([A-Za-z_]\w*)\s*=\s*(.+)",line)
+        if m: return self.assign(m.group(1),m.group(2),n)
+        m=re.fullmatch(r"([A-Za-z_]\w*)\s*=\s*(.+)",line)
+        if m: return self.assign(m.group(1),m.group(2),n)
+        if line.startswith("if ") and line.endswith(":"): return self.begin("if",line[3:-1],n)
+        if line.startswith("repeat ") and line.endswith(":"): return self.begin("repeat",line[7:-1],n)
+        if line.startswith("while ") and line.endswith(":"): return self.begin("while",line[6:-1],n)
+        if line.startswith("function ") and line.endswith(":"): return self.function(line[9:-1],n)
+        if line=="else:":
+            if not self.blocks or self.blocks[-1]!="if": raise TiranError(f"Line {n}: else must follow if.")
+            d=len(self.blocks)-1
+            self.emit("else" if self.target in {"luau","lua"} else "else:" if self.target=="python" else "} else {",d); return
+        if line=="end":
+            if not self.blocks: raise TiranError(f"Line {n}: unexpected end.")
+            self.blocks.pop()
+            if self.target in {"luau","lua"}: self.emit("end",len(self.blocks))
+            elif self.target!="python": self.emit("}",len(self.blocks))
             return
+        if line=="break": return self.emit("break; " if self.target in {"java","csharp"} else "break")
+        if line=="continue": return self.emit("continue; " if self.target in {"java","csharp"} else "continue")
+        if line.startswith("return"):
+            v=line[6:].strip(); self.emit("return"+((" "+expr(v,self.target)) if v else "")+(";" if self.target in {"java","csharp"} else "")); return
+        m=re.fullmatch(r"call\s+([A-Za-z_]\w*)\((.*)\)",line)
+        if m: return self.emit(f"{m.group(1)}({m.group(2)})"+(";" if self.target in {"java","csharp"} else ""))
+        m=re.fullmatch(r"create part\s+([A-Za-z_]\w*)",line)
+        if m:
+            if self.target!="luau": raise TiranError(f"Line {n}: create part requires convert luau.")
+            self.emit(f'local {m.group(1)} = Instance.new("Part")'); self.declared.add(m.group(1)); return
+        m=re.fullmatch(r"service\s+([A-Za-z_]\w*)\s*=\s*(.+)",line)
+        if m:
+            if self.target!="luau": raise TiranError(f"Line {n}: service requires convert luau.")
+            self.emit(f'local {m.group(1)} = game:GetService("{m.group(2).strip()}")'); self.declared.add(m.group(1)); return
+        m=re.fullmatch(r"set\s+([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*=\s*(.+)",line[4:] if line.startswith("set ") else "")
+        if m:
+            if self.target not in {"luau","lua"}: raise TiranError(f"Line {n}: set requires Luau or Lua.")
+            self.emit(f"{m.group(1)}.{m.group(2)[0].upper()+m.group(2)[1:]} = {expr(m.group(3),self.target)}"); return
+        raise TiranError(f"Line {n}: unknown TIRAN command: {line}")
+    def finish(self):
+        if self.blocks: raise TiranError(f"Unclosed block: {self.blocks[-1]}.")
+        return "\n".join(self.lines)+"\n"
 
-        if line.startswith("create part "):
-            self.create_part(line[12:].strip(), number)
-            return
+def wrap(body,target):
+    if target not in {"java","csharp"}: return body
+    lines=body.rstrip().splitlines(); funcs=[]; main=[]; i=0
+    while i<len(lines):
+        if lines[i].lstrip().startswith(("static Object ","static object ")):
+            f=[lines[i]]; depth=lines[i].count("{")-lines[i].count("}"); i+=1
+            while i<len(lines) and depth: f.append(lines[i]); depth+=lines[i].count("{")-lines[i].count("}"); i+=1
+            funcs+=f+[""]
+        else: main.append(lines[i]); i+=1
+    if target=="java": head=["public class Main {"]; tail=["    public static void main(String[] args) {","    }","}"]
+    else: head=["using System;","","public class Program {"]; tail=["    public static void Main() {","    }","}"]
+    return "\n".join(head+["    "+x if x else "" for x in funcs]+["        "+x for x in main[:0]]+["    public static void main(String[] args) {" if target=="java" else "    public static void Main() {"]+["        "+x for x in main]+["    }","}",""])
 
-        if line.startswith("set "):
-            self.set_property(line[4:].strip(), number)
-            return
-
-        if line.startswith("call "):
-            call = line[5:].strip()
-            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*\(.*\)", call):
-                raise TiranError(f"Line {number}: invalid function call.")
-            if self.target in {"luau", "lua", "python", "javascript", "typescript"}:
-                self.emit(call)
-            else:
-                self.emit(call + ";")
-            return
-
-        if line.startswith("return "):
-            value = expr(line[7:], self.target)
-            self.emit(f"return {value}" + (";" if self.target in {"java", "csharp"} else ""))
-            return
-
-        if line.startswith("repeat ") and line.endswith(":"):
-            count = expr(line[7:-1], self.target)
-            if self.target in {"luau", "lua"}:
-                self.emit(f"for _ = 1, {count} do")
-            elif self.target == "python":
-                self.emit(f"for _ in range({count}):")
-            elif self.target in {"javascript", "typescript"}:
-                self.emit(f"for (let i = 0; i < {count}; i++) {{")
-            else:
-                self.emit(f"for (var i = 0; i < {count}; i++) {{")
-            self.blocks.append(Block("repeat"))
-            return
-
-        if line.startswith("while ") and line.endswith(":"):
-            condition = expr(line[6:-1], self.target)
-            if self.target in {"luau", "lua"}:
-                self.emit(f"while {condition} do")
-            elif self.target == "python":
-                self.emit(f"while {condition}:")
-            else:
-                self.emit(f"while ({condition}) {{")
-            self.blocks.append(Block("while"))
-            return
-
-        if line.startswith("if ") and line.endswith(":"):
-            condition = expr(line[3:-1], self.target)
-            if self.target in {"luau", "lua"}:
-                self.emit(f"if {condition} then")
-            elif self.target == "python":
-                self.emit(f"if {condition}:")
-            else:
-                self.emit(f"if ({condition}) {{")
-            self.blocks.append(Block("if"))
-            return
-
-        if line == "else:":
-            if not self.blocks or self.blocks[-1].kind != "if":
-                raise TiranError(f"Line {number}: else must follow if.")
-            if self.target in {"luau", "lua"}:
-                self.lines.append("    " * (len(self.blocks) - 1) + "else")
-            elif self.target == "python":
-                self.lines.append("    " * (len(self.blocks) - 1) + "else:")
-            else:
-                self.lines.append("    " * (len(self.blocks) - 1) + "} else {")
-            return
-
-        if line == "end":
-            if not self.blocks:
-                raise TiranError(f"Line {number}: unexpected end.")
-            block = self.blocks.pop()
-            if self.target in {"luau", "lua"}:
-                self.lines.append("    " * len(self.blocks) + "end")
-            elif self.target in {"javascript", "typescript", "java", "csharp"}:
-                self.lines.append("    " * len(self.blocks) + "}")
-            return
-
-        if line.startswith("function ") and line.endswith(":"):
-            name, args = parse_function_header(line[9:-1], number)
-            self.function_names.add(name)
-            args_text = ", ".join(args)
-            if self.target in {"luau", "lua"}:
-                self.emit(f"function {name}({args_text})")
-            elif self.target == "python":
-                self.emit(f"def {name}({args_text}):")
-            elif self.target in {"javascript", "typescript"}:
-                self.emit(f"function {name}({args_text}) {{")
-            elif self.target == "java":
-                self.emit(f"static void {name}({', '.join('Object ' + a for a in args)}) {{")
-            else:
-                self.emit(f"static void {name}({', '.join('object ' + a for a in args)}) {{")
-            self.blocks.append(Block("function"))
-            return
-
-        assignment = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)", line)
-        if assignment:
-            self.assign(assignment.group(1), assignment.group(2), number)
-            return
-
-        raise TiranError(f"Line {number}: unknown TIRAN command: {line}")
-
-
-def compile_tiran(source: str, target: str) -> str:
-    target = ALIASES.get(target.lower(), target.lower())
-    if target not in TARGETS:
-        raise TiranError(f"Unsupported target '{target}'.")
-    compiler = Compiler(target)
-    for number, raw in enumerate(source.splitlines(), 1):
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
+def compile_tiran(source,target=None):
+    if target is None:
+        m=re.search(r"^\s*convert\s+([\w+-]+)\s*$",source,re.M|re.I)
+        if not m: raise TiranError("No target selected. Add 'convert <language>' or use --target.")
+        target=m.group(1)
+    target=target_name(target); c=Compiler(target)
+    for n,raw in enumerate(source.splitlines(),1):
+        line=raw.strip()
+        if not line or line.startswith("#"): continue
         if line.lower().startswith("convert "):
-            requested = ALIASES.get(line[8:].strip().lower(), line[8:].strip().lower())
-            if requested != target:
-                raise TiranError(
-                    f"Line {number}: source says convert {requested}, but compiler target is {target}."
-                )
+            if target_name(line[8:])!=target: raise TiranError(f"Line {n}: target mismatch.")
             continue
-        compiler.statement(line, number)
+        c.statement(line,n)
+    return wrap(c.finish(),target)
 
-    body = compiler.finish()
-    return wrap_program(body, target)
-
-
-def wrap_program(body: str, target: str) -> str:
-    if target not in {"java", "csharp"}:
-        return body + ("\n" if body else "")
-
-    lines = body.splitlines()
-    functions = []
-    main_lines = []
-    i = 0
-    while i < len(lines):
-        if lines[i].startswith("static void "):
-            function = [lines[i]]
-            depth = lines[i].count("{") - lines[i].count("}")
-            i += 1
-            while i < len(lines) and depth > 0:
-                function.append(lines[i])
-                depth += lines[i].count("{") - lines[i].count("}")
-                i += 1
-            if depth != 0:
-                raise TiranError("Internal error: unbalanced generated function.")
-            functions.extend(function)
-            functions.append("")
-        else:
-            main_lines.append(lines[i])
-            i += 1
-
-    if target == "java":
-        parts = ["public class Main {"]
-        if functions:
-            parts.extend("    " + line if line else "" for line in functions)
-        parts.extend([
-            "    public static void main(String[] args) {",
-            *("        " + line for line in main_lines),
-            "    }",
-            "}",
-            "",
-        ])
-        return "\n".join(parts)
-
-    parts = ["using System;", "", "public class Program {"]
-    if functions:
-        parts.extend("    " + line if line else "" for line in functions)
-    parts.extend([
-        "    public static void Main() {",
-        *("        " + line for line in main_lines),
-        "    }",
-        "}",
-        "",
-    ])
-    return "\n".join(parts)
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        prog="tiran",
-        description="Compile TIRAN source into real target-language code.",
-    )
-    parser.add_argument("source", help="Path to a .tiran file")
-    parser.add_argument("-t", "--target", help="Target language; otherwise use convert in the source")
-    parser.add_argument("-o", "--output", help="Write generated code to this file")
-    args = parser.parse_args()
-
+def main():
+    p=argparse.ArgumentParser(prog="tiran",description="Compile TIRAN into real source code.")
+    p.add_argument("source"); p.add_argument("-t","--target"); p.add_argument("-o","--output")
+    a=p.parse_args()
     try:
-        with open(args.source, "r", encoding="utf-8") as file:
-            source = file.read()
-
-        target = args.target
-        if not target:
-            match = re.search(r"^\s*convert\s+([A-Za-z0-9_+-]+)\s*$", source, re.MULTILINE | re.IGNORECASE)
-            if not match:
-                raise TiranError("No target selected. Add 'convert <language>' or use --target.")
-            target = match.group(1)
-
-        result = compile_tiran(source, target)
-
-        if args.output:
-            with open(args.output, "w", encoding="utf-8") as file:
-                file.write(result)
-            print(f"Compiled {args.source} -> {args.output}")
-        else:
-            sys.stdout.write(result)
+        result=compile_tiran(Path(a.source).read_text(encoding="utf-8"),a.target)
+        if a.output: Path(a.output).write_text(result,encoding="utf-8"); print(f"Compiled {a.source} -> {a.output}")
+        else: sys.stdout.write(result)
         return 0
-    except (OSError, TiranError) as error:
-        print(f"TIRAN ERROR: {error}", file=sys.stderr)
-        return 1
+    except (OSError,TiranError) as e:
+        print(f"TIRAN ERROR: {e}",file=sys.stderr); return 1
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+if __name__=="__main__": raise SystemExit(main())
