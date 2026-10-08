@@ -153,6 +153,18 @@ let player = game.Players.LocalPlayer
         self.assertEqual(get_builtin("text_trim_then_upper")("  tiran  "),"TIRAN")
         self.assertEqual(get_builtin("list_reverse_then_length")([1,2,3]),3)
 
+    def test_tiran_builtins_compile_to_python_runtime_calls(self):
+        source = """convert python
+let added = number_add(10, 5)
+let cleaned = text_trim_then_upper("  tiran  ")
+call list_take([1, 2, 3], 2)
+"""
+        out = compile_tiran(source)
+        self.assertIn("from tiran_stdlib import get_builtin as __tiran_builtin", out)
+        self.assertIn('__tiran_builtin("number_add")(10, 5)', out)
+        self.assertIn('__tiran_builtin("text_trim_then_upper")("  tiran  ")', out)
+        self.assertIn('__tiran_builtin("list_take")([1, 2, 3])', out)
+
     def test_stdlib_missing_name(self):
         with self.assertRaises(KeyError):
             get_builtin("not_a_real_builtin")
