@@ -4,6 +4,15 @@
 
 TIRAN is a readable, dependency-free programming language with a compiler that can generate source for multiple targets. The project is designed around a small, understandable language core, deterministic diagnostics, and a growing standard library.
 
+## Using the standard library
+
+The Python target can call any registered TIRAN built-in directly by name. For
+example, `number_add(10, 5)` compiles to a call through
+`tiran_stdlib.get_builtin`. Keep `tiran_stdlib.py` alongside generated Python
+when the script uses TIRAN built-ins. The 11,000-entry registry is available
+through `get_builtin(name)` in Python; the compiler currently wires these
+calls into generated Python, not yet into standalone Luau output.
+
 ## Current release
 
 TIRAN includes:
