@@ -2,9 +2,28 @@ import unittest
 
 from tiran import TiranError, compile_tiran, format_tiran
 from tiran_stdlib import BUILTIN_COUNT, BUILTINS, get_builtin
+from tiran_syntax import ParseError, parse_tiran
 
 
 class TiranTests(unittest.TestCase):
+
+    def test_syntax_tree(self):
+        program = parse_tiran("""convert luau
+if true:
+    say "x"
+end""")
+        self.assertEqual(program.target, "luau")
+        self.assertEqual(program.nodes[0].kind, "if")
+        self.assertEqual(program.nodes[0].children[0].text, 'say "x"')
+
+    def test_unexpected_end_is_parser_error(self):
+        with self.assertRaises(ParseError):
+            parse_tiran("convert luau\nend")
+
+    def test_target_mismatch(self):
+        with self.assertRaises(TiranError):
+            compile_tiran('convert luau\nsay "x"', target="python")
+
     def test_luau(self):
         self.assertIn('print("Hello")', compile_tiran('convert luau\nsay "Hello"'))
 
