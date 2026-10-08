@@ -125,7 +125,7 @@ class Compiler:
         if m:
             if self.target!="luau": raise TiranError(f"Line {n}: service requires convert luau.")
             self.emit(f'local {m.group(1)} = game:GetService("{m.group(2).strip()}")'); self.declared.add(m.group(1)); return
-        m=re.fullmatch(r"set\s+([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*=\s*(.+)",line[4:] if line.startswith("set ") else "")
+        m=re.fullmatch(r"([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*=\s*(.+)",line[4:] if line.startswith("set ") else "")
         if m:
             if self.target not in {"luau","lua"}: raise TiranError(f"Line {n}: set requires Luau or Lua.")
             self.emit(f"{m.group(1)}.{m.group(2)[0].upper()+m.group(2)[1:]} = {expr(m.group(3),self.target)}"); return
