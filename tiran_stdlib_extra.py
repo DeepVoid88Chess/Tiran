@@ -53,7 +53,7 @@ TEXT_OPS: dict[str, Builtin] = {
     "remove_spaces": lambda x: str(x).replace(" ", ""),
     "spaces_to_underscores": lambda x: str(x).replace(" ", "_"),
     "spaces_to_hyphens": lambda x: str(x).replace(" ", "-"),
-    "remove_digits": lambda x: re.sub(r"\\d", "", str(x)),
+    "remove_digits": lambda x: "".join(c for c in str(x) if not c.isdigit()),
     "keep_digits": lambda x: "".join(c for c in str(x) if c.isdigit()),
     "remove_letters": lambda x: "".join(c for c in str(x) if not c.isalpha()),
     "keep_letters": lambda x: "".join(c for c in str(x) if c.isalpha()),
