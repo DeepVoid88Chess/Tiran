@@ -42,17 +42,36 @@ class TiranTests(unittest.TestCase):
         self.assertEqual(BUILTIN_COUNT, 11000)
         self.assertEqual(len(BUILTINS), 11000)
 
+    def test_stdlib_has_no_constant_suffix_families(self):
+        forbidden_prefixes = {
+            "number_add", "number_subtract", "number_multiply", "number_divide",
+            "number_mod", "text_repeat", "text_prefix", "text_suffix",
+            "list_take", "list_drop", "list_pad",
+        }
+        for name in BUILTINS:
+            parts = name.rsplit("_", 1)
+            self.assertFalse(
+                len(parts) == 2
+                and parts[1].isdigit()
+                and parts[0] in forbidden_prefixes,
+                name,
+            )
+
     def test_stdlib_real_behavior(self):
-        self.assertEqual(get_builtin("number_add_5")(10), 15)
-        self.assertEqual(get_builtin("number_subtract_5")(10), 5)
-        self.assertEqual(get_builtin("number_multiply_5")(10), 50)
-        self.assertEqual(get_builtin("number_divide_5")(10), 2)
-        self.assertEqual(get_builtin("text_repeat_3")("yo"), "yoyoyo")
-        self.assertEqual(get_builtin("text_prefix_4")("TIRAN"), "TIRA")
-        self.assertEqual(get_builtin("text_suffix_4")("TIRAN"), "IRAN")
-        self.assertEqual(get_builtin("list_take_2")([1, 2, 3]), [1, 2])
-        self.assertEqual(get_builtin("list_drop_2")([1, 2, 3]), [3])
-        self.assertEqual(get_builtin("list_pad_4")([1], 0), [1, 0, 0, 0])
+        self.assertEqual(get_builtin("number_add")(10, 5), 15)
+        self.assertEqual(get_builtin("number_subtract")(10, 5), 5)
+        self.assertEqual(get_builtin("number_multiply")(10, 5), 50)
+        self.assertEqual(get_builtin("number_divide")(10, 5), 2)
+        self.assertEqual(get_builtin("number_mod")(10, 3), 1)
+        self.assertEqual(get_builtin("text_repeat")("yo", 3), "yoyoyo")
+        self.assertEqual(get_builtin("text_prefix")("TIRAN", 4), "TIRA")
+        self.assertEqual(get_builtin("text_suffix")("TIRAN", 4), "IRAN")
+        self.assertEqual(get_builtin("list_take")([1, 2, 3], 2), [1, 2])
+        self.assertEqual(get_builtin("list_drop")([1, 2, 3], 2), [3])
+        self.assertEqual(get_builtin("list_pad")([1], 4, 0), [1, 0, 0, 0])
+        self.assertEqual(get_builtin("number_absolute_then_square")(3), 9)
+        self.assertEqual(get_builtin("text_trim_then_upper")("  tiran  "), "TIRAN")
+        self.assertEqual(get_builtin("list_reverse_then_length")([1, 2, 3]), 3)
 
     def test_stdlib_missing_name(self):
         with self.assertRaises(KeyError):
