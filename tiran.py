@@ -1,4 +1,4 @@
-"""TIRAN v1.0 - readable, dependency-free transpiler."""
+"""TIRAN - readable, dependency-free source transpiler with Roblox/Luau helpers."""
 from __future__ import annotations
 import argparse, re, sys
 from pathlib import Path
@@ -115,12 +115,25 @@ class Compiler:
         if line.startswith("return"):
             if self.target=="html": raise TiranError(f"Line {n}: return is not supported by the HTML target.")
             v=line[6:].strip(); self.emit("return"+((" "+expr(v,self.target)) if v else "")+(";" if self.target in {"java","csharp"} else "")); return
-        m=re.fullmatch(r"call\s+([A-Za-z_]\w*)\((.*)\)",line)
+        m=re.fullmatch(r"call\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\((.*)\)",line)
         if m: return self.emit(f"{m.group(1)}({m.group(2)})"+(";" if self.target in {"java","csharp"} else ""))
-        m=re.fullmatch(r"create part\s+([A-Za-z_]\w*)",line)
+        m=re.fullmatch(r"connect\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s+to\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)",line)
         if m:
-            if self.target!="luau": raise TiranError(f"Line {n}: create part requires convert luau.")
-            self.emit(f'local {m.group(1)} = Instance.new("Part")'); self.declared.add(m.group(1)); return
+            if self.target!="luau": raise TiranError(f"Line {n}: connect requires convert luau.")
+            self.emit(f"{m.group(1)}:Connect({m.group(2)})"); return
+        m=re.fullmatch(r"destroy\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)",line)
+        if m:
+            if self.target!="luau": raise TiranError(f"Line {n}: destroy requires convert luau.")
+            self.emit(f"{m.group(1)}:Destroy()"); return
+        m=re.fullmatch(r"wait(?:\s+(.+))?",line)
+        if m:
+            if self.target!="luau": raise TiranError(f"Line {n}: wait requires convert luau.")
+            self.emit("task.wait(" + (expr(m.group(1),self.target) if m.group(1) else "") + ")"); return
+        m=re.fullmatch(r"create\s+(part|folder|model|remoteevent|remote_function|bindableevent)\s+([A-Za-z_]\w*)",line,re.I)
+        if m:
+            if self.target!="luau": raise TiranError(f"Line {n}: create objects require convert luau.")
+            kinds={"part":"Part","folder":"Folder","model":"Model","remoteevent":"RemoteEvent","remote_function":"RemoteFunction","bindableevent":"BindableEvent"}
+            self.emit(f'local {m.group(2)} = Instance.new("{kinds[m.group(1).lower()]}")'); self.declared.add(m.group(2)); return
         m=re.fullmatch(r"service\s+([A-Za-z_]\w*)\s*=\s*(.+)",line)
         if m:
             if self.target!="luau": raise TiranError(f"Line {n}: service requires convert luau.")
