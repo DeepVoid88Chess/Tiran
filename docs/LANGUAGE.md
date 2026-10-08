@@ -1,5 +1,7 @@
 # TIRAN Language Specification
 
+TIRAN is designed as a small readable core language with target-specific extensions. Source is validated before code generation so malformed block structure is reported consistently.
+
 ## Target
 Use `convert luau`, `convert lua`, `convert python`, `convert javascript`, `convert typescript`, `convert java`, `convert csharp`, or `convert html`.
 
@@ -65,6 +67,18 @@ For Luau, `import Inventory as Inv` becomes:
 
 ## Error handling
 TIRAN's `try/catch` construct maps to each target's closest supported mechanism. Luau uses `pcall` because Luau does not have native try/catch syntax.
+
+## Tooling
+
+Validate a program without emitting generated code:
+
+    python tiran.py program.tiran --check
+
+Inspect the parsed syntax tree:
+
+    python tiran.py program.tiran --ast
+
+The AST is intentionally small and dependency-free so future editor tooling can build on it.
 
 ## Formatting
 Run:
