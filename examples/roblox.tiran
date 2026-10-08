@@ -1,9 +1,5 @@
-# A real Roblox/Luau example
 convert luau
-
-part = "This is a normal TIRAN variable"
-say part
-
+service RunService = RunService
 create part block
 set block.name = "TiranBlock"
 set block.anchored = true
