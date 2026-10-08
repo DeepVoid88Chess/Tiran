@@ -195,7 +195,9 @@ class Compiler:
             if not self.blocks or self.blocks[-1]!="try": raise TiranError(f"Line {n}: catch must follow try.")
             d=len(self.blocks)-1
             arg=line[5:-1].strip() or "error"
-            if self.target=="luau":\n                self.emit("end",d)\n                self.emit(f"if not __tiran_ok then",d)
+            if self.target=="luau":
+                self.emit("end",d)
+                self.emit(f"if not __tiran_ok then",d)
             elif self.target=="python": self.emit("except Exception as "+arg+":",d)
             else: self.emit("} catch (Exception "+arg+") {",d)
             return
