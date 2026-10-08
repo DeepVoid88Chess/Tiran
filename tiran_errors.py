@@ -113,6 +113,34 @@ _group("E8", [
     (5, "Regression test failure", "A compiler behavior differs from its expected result.", "Reproduce the failing test and fix the underlying behavior."),
 ])
 
+_group("E9", [
+    (1, "Invalid argument count", "A function received the wrong number of arguments.", "Compare the call with the function's documented signature."),
+    (2, "Invalid argument order", "Arguments were supplied in an unsupported order.", "Pass arguments in the order shown in the function reference."),
+    (3, "Unsupported value", "The value is not supported by the requested operation.", "Use a value from the documented input domain."),
+    (4, "Invalid boolean value", "A boolean operation received a non-boolean value.", "Use true or false, or explicitly convert the value."),
+    (5, "Invalid collection key", "A collection key cannot be used for this operation.", "Use a supported, hashable key."),
+    (6, "Duplicate key", "A map contains a duplicate key where unique keys are required.", "Keep one value for each key."),
+    (7, "Invalid slice", "A slice boundary or step is invalid.", "Check start, stop, and step values."),
+    (8, "Invalid Unicode operation", "A text operation cannot process the supplied Unicode value.", "Normalize the text or choose a Unicode-safe operation."),
+    (9, "Invalid path", "A path is malformed or cannot be resolved.", "Check separators and ensure the referenced path exists."),
+    (10, "Invalid service name", "The requested Roblox service name is invalid.", "Use an official Roblox service name."),
+    (11, "Invalid event connection", "The event or callback cannot be connected as written.", "Check the event path and callback function."),
+    (12, "Invalid remote call", "The remote-call statement is malformed.", "Check the remote object and its argument list."),
+    (13, "Invalid instance creation", "The instance creation statement is invalid.", "Use create ClassName variable with a supported class."),
+    (14, "Invalid property assignment", "The property assignment is malformed.", "Use set object.property = expression."),
+    (15, "Invalid vector", "A Vector3 value does not have three valid components.", "Provide x, y, and z components."),
+    (16, "Invalid CFrame", "A CFrame constructor has invalid components.", "Provide valid position components or a supported CFrame expression."),
+    (17, "Invalid loop count", "The repeat count is not a valid loop count.", "Use a non-negative integer expression."),
+    (18, "Invalid condition", "The condition cannot be represented for the selected target.", "Use a boolean expression supported by the target."),
+    (19, "Invalid module name", "The module identifier is malformed.", "Use a valid module name."),
+    (20, "Invalid output extension", "The output file extension does not match the selected target.", "Use the target's expected file extension."),
+    (21, "Invalid source directive", "A source-level directive is malformed.", "Check the directive spelling and its required arguments."),
+    (22, "Invalid compiler option", "A compiler option has an invalid value.", "Run tiran --help and use a supported option value."),
+    (23, "Built-in registry unavailable", "The built-in registry could not be loaded.", "Ensure the TIRAN runtime files are installed together."),
+    (24, "Built-in documentation unavailable", "The built-in documentation could not be found.", "Restore the docs directory or use the online reference."),
+    (25, "Unsupported pipeline", "A built-in pipeline cannot process this type combination.", "Choose a pipeline whose stages accept each other's output."),
+])
+
 
 def classify_error(message: str) -> ErrorInfo:
     """Map a legacy human-readable error message to a stable public code."""
