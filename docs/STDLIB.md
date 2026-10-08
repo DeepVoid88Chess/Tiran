@@ -1,61 +1,49 @@
 # TIRAN Standard Library
 
-TIRAN ships exactly 11,000 callable built-ins in tiran_stdlib.py.
+TIRAN has exactly **11,000 uniquely named built-ins**.
 
-## Core functions
+## The important rule
 
-The 23 core functions are:
+A parameter belongs in the function call, not in the function name.
 
-- abs
-- min
-- max
-- round
-- floor
-- ceil
-- sqrt
-- pow
-- length
-- lower
-- upper
-- trim
-- contains
-- starts_with
-- ends_with
-- join
-- split
-- replace
-- reverse
-- sort
-- sum
-- any
-- all
+Bad:
 
-## Generated families
+    number_add_5
+    number_add_354
+    list_drop_2
+    list_drop_354
 
-The remaining 10,977 functions are parameterized family members.
+Good:
 
-| Family | Entries | Example | Meaning |
-|---|---:|---|---|
-| number_add | 1000 | number_add_12(x) | x + 12 |
-| number_subtract | 1000 | number_subtract_12(x) | x - 12 |
-| number_multiply | 1000 | number_multiply_12(x) | x * 12 |
-| number_divide | 1000 | number_divide_12(x) | x / 12 |
-| text_repeat | 1000 | text_repeat_3(x) | repeat text 3 times |
-| text_prefix | 1000 | text_prefix_4(x) | first 4 characters |
-| text_suffix | 1000 | text_suffix_4(x) | last 4 characters |
-| list_take | 1000 | list_take_4(x) | first 4 items |
-| list_drop | 1000 | list_drop_4(x) | remove first 4 items |
-| list_pad | 1000 | list_pad_4(x, v) | pad to at least 4 items |
-| number_mod | 977 | number_mod_7(x) | x modulo 7 |
+    number_add(10, 5)
+    number_add(10, 354)
+    list_drop(items, 2)
+    list_drop(items, 354)
 
-Every entry is created as a callable with its own captured parameter. Division and modulo by zero deliberately raise an error rather than silently returning a fake result.
+There is one number_add, one list_drop, and so on.
 
-## Using the library
+## Built-in categories
 
-    from tiran_stdlib import BUILTINS, get_builtin
+The registry contains:
 
-    print(len(BUILTINS))
-    print(get_builtin("number_add_5")(10))
-    print(get_builtin("text_repeat_3")("TIRAN"))
+- Core general-purpose operations such as abs, length, join, replace, sort, sum, any, and all.
+- Parameterized number operations such as number_add, number_subtract, number_multiply, number_divide, and number_mod.
+- Parameterized text operations such as text_repeat, text_prefix, and text_suffix.
+- Parameterized list operations such as list_take, list_drop, and list_pad.
+- Named number, text, and list transforms.
+- Named two-step pipelines, such as number_absolute_then_square.
+- Named three-step pipelines whose names describe the complete operation sequence.
 
-The registry performs duplicate-name checks and asserts its final count at import time.
+The pipeline entries are real callables. They are not empty placeholders and they do not hide a numeric constant in their name.
+
+## Examples
+
+    from tiran_stdlib import get_builtin
+
+    get_builtin("number_add")(10, 5)                # 15
+    get_builtin("number_mod")(17, 4)                # 1
+    get_builtin("text_prefix")("TIRAN", 3)          # "TIR"
+    get_builtin("list_drop")([1, 2, 3, 4], 2)       # [3, 4]
+    get_builtin("number_absolute_then_square")(-4)  # 16
+
+The registry is verified by tests to contain exactly 11,000 names and to reject the old constant-suffix families.
