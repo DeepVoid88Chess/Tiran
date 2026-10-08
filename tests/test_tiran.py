@@ -128,8 +128,8 @@ let player = game.Players.LocalPlayer
             compile_tiran('convert luau\nthis_is_not_tiran')
 
     def test_stdlib_exact_count(self):
-        self.assertEqual(BUILTIN_COUNT,11000)
-        self.assertEqual(len(BUILTINS),11000)
+        self.assertEqual(BUILTIN_COUNT,22000)
+        self.assertEqual(len(BUILTINS),22000)
 
     def test_stdlib_has_no_constant_suffix_families(self):
         forbidden_prefixes={"number_add","number_subtract","number_multiply","number_divide","number_mod","text_repeat","text_prefix","text_suffix","list_take","list_drop","list_pad"}
@@ -176,6 +176,24 @@ let picked = list_take([1, 2, 3], 2)
         self.assertEqual(namespace["added"], 15)
         self.assertEqual(namespace["cleaned"], "TIRAN")
         self.assertEqual(namespace["picked"], [1, 2])
+
+    def test_extra_stdlib_behavior(self):
+        self.assertEqual(get_builtin("extra_number_absolute_then_square_then_negate")(-3), -9)
+        self.assertEqual(get_builtin("extra_text_lower_then_trim_then_reverse")("  TIRAN  "), "narit")
+        self.assertEqual(get_builtin("extra_list_reverse_then_unique_then_sort")([2, 1, 2]), [1, 2])
+
+    def test_error_codes_are_stable_and_documented(self):
+        from tiran_errors import ERRORS, classify_error
+        self.assertGreaterEqual(len(ERRORS), 90)
+        self.assertEqual(classify_error("Unsupported target 'wat'.").code, "E2001")
+        self.assertIn("E1002", ERRORS)
+        self.assertIn("E8005", ERRORS)
+
+    def test_compiler_error_has_code_and_hint(self):
+        with self.assertRaises(TiranError) as caught:
+            compile_tiran("convert wat\\nsay 1")
+        self.assertEqual(caught.exception.code, "E2001")
+        self.assertTrue(caught.exception.diagnostic.hint)
 
     def test_stdlib_missing_name(self):
         with self.assertRaises(KeyError):
