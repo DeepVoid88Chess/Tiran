@@ -7,7 +7,7 @@ Use `convert luau`, `convert lua`, `convert python`, `convert javascript`, `conv
 - `say expression`
 - `let name = expression`
 - `name = expression`
-- `if expression:` / `else:` / `end`
+- `if expression:` / `elseif expression:` / `else:` / `end`
 - `repeat expression:` / `end`
 - `while expression:` / `end`
 - `function name(args):` / `end`
@@ -17,9 +17,9 @@ Use `convert luau`, `convert lua`, `convert python`, `convert javascript`, `conv
 - `continue`
 
 ## Roblox/Luau
-- `create part name`
+- `create part name` (also `folder`, `model`, `remoteevent`, `remote_function`, `bindableevent`)
 - `service variable = ServiceName`
-- `set object.property = expression`
+- `set object.property = expression`\n- `connect object.Event to function`\n- `destroy object`\n- `wait [seconds]`
 
 Expressions are intentionally close to the selected target language. TIRAN owns the program structure while allowing normal target expressions to pass through.
 
