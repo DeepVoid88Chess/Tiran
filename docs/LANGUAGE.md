@@ -1,7 +1,7 @@
 # TIRAN Language Specification
 
 ## Target
-Use `convert luau`, `convert lua`, `convert python`, `convert javascript`, `convert typescript`, `convert java`, or `convert csharp`.
+Use `convert luau`, `convert lua`, `convert python`, `convert javascript`, `convert typescript`, `convert java`, `convert csharp`, or `convert html`.
 
 ## Statements
 - `say expression`
@@ -15,12 +15,63 @@ Use `convert luau`, `convert lua`, `convert python`, `convert javascript`, `conv
 - `return expression`
 - `break`
 - `continue`
+- `import Module [as Alias]`
+- `try:` / `catch name:` / `end`
+
+## Expressions
+TIRAN expressions are deliberately close to target syntax. Arithmetic, comparisons, boolean operators, function calls, table/collection literals, indexing, and constructors can be passed through to the selected target.
+
+Example:
+
+    let total = 10 + 5 * 2
+    let items = {"apple", "cake"}
+    let player = {name = "TIRAN", score = total}
+
+The compiler normalizes common TIRAN literals such as `true`, `false`, `nil`, and `nothing` for the selected target.
 
 ## Roblox/Luau
-- `create part name` (also `folder`, `model`, `remoteevent`, `remote_function`, `bindableevent`)
+- `create part name`
+- `create folder name`
+- `create model name`
+- `create remoteevent name`
+- `create remote_function name`
+- `create bindableevent name`
+- `create screengui name`
+- `create frame name`
+- `create textlabel name`
+- `create textbutton name`
+- `create imagelabel name`
+- `create imagebutton name`
 - `service variable = ServiceName`
-- `set object.property = expression`\n- `connect object.Event to function`\n- `destroy object`\n- `wait [seconds]`
+- `set object.property = expression`
+- `parent object to expression`
+- `connect object.Event to function`
+- `disconnect connection`
+- `destroy object`
+- `wait [seconds]`
+- `fire remote arguments`
+- `invoke remote arguments`
+- `vector3 name = x, y, z`
+- `cframe name = x, y, z`
 
-Expressions are intentionally close to the selected target language. TIRAN owns the program structure while allowing normal target expressions to pass through.
+Property paths can be nested, for example:
 
-Errors are deterministic and include the source line whenever possible.
+    set player.Character.Humanoid.WalkSpeed = 20
+
+## Modules
+For Luau, `import Inventory as Inv` becomes:
+
+    local Inv = require(script.Parent.Inventory)
+
+## Error handling
+TIRAN's `try/catch` construct maps to each target's closest supported mechanism. Luau uses `pcall` because Luau does not have native try/catch syntax.
+
+## Formatting
+Run:
+
+    python tiran.py file.tiran --format --output formatted.tiran
+
+The formatter normalizes indentation without changing the program's statements.
+
+## Errors
+Errors are deterministic and include the source line whenever possible. Target-specific operations fail clearly rather than emitting fake code.
