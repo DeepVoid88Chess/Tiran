@@ -2,133 +2,150 @@
 
 **TIRAN - Designed to make coding easier.**
 
-TIRAN is a small universal coding language and compiler. You write readable TIRAN source, choose a target, and TIRAN generates real source code for that target.
+TIRAN is a readable source language and dependency-free transpiler. You write TIRAN once, select a target language, and TIRAN produces real source code.
 
-## v1.0
+## Current release
 
-TIRAN v1.0 is the first complete, usable compiler release.
+TIRAN includes:
 
-### Targets
+- A command-line compiler
+- Luau, Lua, Python, JavaScript, TypeScript, Java, C#, and HTML targets
+- Variables, assignment, conditionals, loops, functions, calls, returns, break, and continue
+- Roblox/Luau helpers for Parts and services
+- An exactly **11,000-function standard library**
+- Deterministic compiler errors with source line numbers
+- Examples, tests, and GitHub Actions CI
+- No third-party Python dependencies
 
-- Luau
-- Lua
-- Python
-- JavaScript
-- TypeScript
-- Java
-- C#
+## 11,000 built-ins
 
-Aliases: `js`, `ts`, and `cs`.
+The file tiran_stdlib.py contains exactly 11,000 registered callable built-ins.
 
-## Core syntax
+They are real functions, not empty placeholders. The library has 23 core functions such as abs, sqrt, length, join, and replace, plus 10,977 parameterized functions across documented families.
+
+Examples:
+
+    from tiran_stdlib import get_builtin
+
+    get_builtin("number_add_5")(10)       # 15
+    get_builtin("text_repeat_3")("yo")    # yoyoyo
+    get_builtin("text_prefix_4")("TIRAN") # TIRA
+    get_builtin("list_take_2")([1,2,3])   # [1,2]
+
+The generated families are deliberately parameterized so the 11,000 entries have concrete behavior while the implementation stays maintainable.
+
+## Language
 
 ### Target
-```tiran
-convert luau
-```
+
+    convert luau
+
+Supported targets:
+
+- luau
+- lua
+- python
+- javascript / js
+- typescript / ts
+- java
+- csharp / cs
+- html
 
 ### Output
-```tiran
-say "Hello from TIRAN!"
-```
+
+    say "Hello from TIRAN!"
 
 ### Variables
-```tiran
-name = "TIRAN"
-score = 100
-say name
-```
+
+    name = "TIRAN"
+    score = 100
+    say name
 
 ### If / else
-```tiran
-if score > 50:
-    say "Great score!"
-else:
-    say "Keep going!"
-end
-```
+
+    if score > 50:
+        say "Great score!"
+    else:
+        say "Keep going!"
+    end
 
 ### Loops
-```tiran
-repeat 5:
-    say "Hello!"
-end
 
-while score > 0:
-    score = score - 1
-end
-```
+    repeat 5:
+        say "Hello!"
+    end
+
+    while score > 0:
+        score = score - 1
+    end
 
 ### Functions
-```tiran
-function greet(name):
-    say name
-end
 
-call greet("TIRAN")
-```
+    function greet(name):
+        say name
+    end
+
+    call greet("TIRAN")
 
 ### Roblox / Luau
-```tiran
-convert luau
 
-create part block
-set block.name = "TiranBlock"
-set block.anchored = true
-set block.position = Vector3.new(0, 5, 0)
-set block.parent = workspace
-```
+    convert luau
+    service RunService = RunService
+    create part block
+    set block.name = "TiranBlock"
+    set block.anchored = true
+    set block.position = Vector3.new(0, 5, 0)
+    set block.parent = workspace
 
-This generates real Luau such as:
-```lua
-local block = Instance.new("Part")
-block.Name = "TiranBlock"
-block.Anchored = true
-block.Position = Vector3.new(0, 5, 0)
-block.Parent = workspace
-```
+This generates real Luau:
+
+    local RunService = game:GetService("RunService")
+    local block = Instance.new("Part")
+    block.Name = "TiranBlock"
+    block.Anchored = true
+    block.Position = Vector3.new(0, 5, 0)
+    block.Parent = workspace
 
 ## CLI
 
 Compile using the target in the source:
-```text
-python tiran.py examples/hello.tiran
-```
+
+    python tiran.py examples/hello.tiran
 
 Or select it from the command line:
-```text
-python tiran.py examples/hello.tiran --target luau
-```
+
+    python tiran.py examples/hello.tiran --target luau
 
 Write the result to a file:
-```text
-python tiran.py examples/hello.tiran --output hello.luau
-```
 
-## Tests
+    python tiran.py examples/hello.tiran --output hello.luau
 
-```text
-python -m unittest discover
-```
+Run the test suite:
+
+    python -m unittest discover -s tests -v
 
 ## Project layout
 
-```text
-Tiran/
-  tiran.py
-  README.md
-  examples/
-    hello.tiran
-    features.tiran
-    roblox.tiran
-  tests/
-    test_tiran.py
-```
+    Tiran/
+      tiran.py
+      tiran_stdlib.py
+      README.md
+      docs/
+        LANGUAGE.md
+        API.md
+        STDLIB.md
+      examples/
+        hello.tiran
+        control_flow.tiran
+        roblox.tiran
+      tests/
+        test_tiran.py
+      .github/
+        workflows/
+          test.yml
 
-## What "complete" means here
+## Design rule
 
-TIRAN v1.0 is a complete first release of the compiler defined by this repository. It does not pretend that every programming-language feature can be translated perfectly between every language. Unsupported or target-specific operations produce clear compiler errors instead of silently generating fake code.
-
-Future versions can expand the language, targets, Roblox APIs, editor, and tooling without changing the core idea.
+TIRAN only claims features that are implemented and tested. Target-specific operations produce clear compiler errors instead of silently generating fake code.
 
 **TIRAN - Designed to make coding easier.**
