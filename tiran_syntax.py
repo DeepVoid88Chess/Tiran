@@ -43,7 +43,7 @@ def _expression_for(line: str, number: int):
         (r"^[A-Za-z_]\w*\s*=\s*(.+)$", 1),
         (r"^return(?:\s+(.+))?$", 1),
         (r"^say\s+(.+)$", 1),
-        (r"^call\s+[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\((.*)\)$", 1),
+        (r"^call\s+(.+)$", 1),
     )
     for pattern, group in checks:
         match = re.fullmatch(pattern, line)
