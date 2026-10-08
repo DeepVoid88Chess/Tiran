@@ -95,6 +95,11 @@ class Compiler:
         if line.startswith("repeat ") and line.endswith(":"): return self.begin("repeat",line[7:-1],n)
         if line.startswith("while ") and line.endswith(":"): return self.begin("while",line[6:-1],n)
         if line.startswith("function ") and line.endswith(":"): return self.function(line[9:-1],n)
+        if line.startswith("elseif ") and line.endswith(":"):
+            if not self.blocks or self.blocks[-1]!="if": raise TiranError(f"Line {n}: elseif must follow if.")
+            d=len(self.blocks)-1
+            h=expr(line[7:-1],self.target)
+            self.emit((f"elseif {h} then" if self.target in {"luau","lua"} else f"elif {h}:" if self.target=="python" else f"}} else if ({h}) {{"),d); return
         if line=="else:":
             if not self.blocks or self.blocks[-1]!="if": raise TiranError(f"Line {n}: else must follow if.")
             d=len(self.blocks)-1
