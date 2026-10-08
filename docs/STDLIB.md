@@ -22,6 +22,26 @@ Good:
 
 There is one number_add, one list_drop, and so on.
 
+## Aglacitivity
+
+**Aglacitive** is a TIRAN design warning for having many separate names for the same operation when the changing value could simply be an argument.
+
+For example, this is aglacitive:
+
+    fart_sniff_1
+    fart_sniff_2
+    fart_sniff_3
+    ...
+    fart_sniff_999
+
+Those could be one function:
+
+    fart_sniff(number)
+
+The old TIRAN standard library had this problem with names such as number_add_5 and number_add_354. Those were replaced by parameterized functions such as number_add(number, amount).
+
+Unique compositions are **not** considered aglacitive just because they share smaller operations. For example, number_absolute_then_square is a distinct named pipeline, so it is useful as its own built-in.
+
 ## Built-in categories
 
 The registry contains:
