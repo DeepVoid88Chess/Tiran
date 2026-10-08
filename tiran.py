@@ -9,6 +9,7 @@ from pathlib import Path
 from tiran_expr import Expr
 from tiran_stdlib import BUILTINS as TIRAN_BUILTINS
 from tiran_syntax import Node, ParseError, ast_dict, parse_tiran
+from tiran_errors import classify_error
 
 TARGETS = {
     "luau": ".luau",
@@ -49,7 +50,13 @@ ROBLOX_CLASSES = {
 
 
 class TiranError(ValueError):
-    pass
+    """Compiler error carrying a stable public diagnostic code."""
+
+    def __init__(self, message: str, code: str | None = None):
+        self.message = message
+        self.diagnostic = classify_error(message)
+        self.code = code or self.diagnostic.code
+        super().__init__(message)
 
 
 def target_name(value: str) -> str:
@@ -619,8 +626,19 @@ def main() -> int:
         else:
             print(result, end="")
         return 0
-    except (OSError, TiranError, ParseError) as exc:
-        print(f"TIRAN ERROR: {exc}")
+    except TiranError as exc:
+        print(f"TIRAN ERROR [{exc.code}]: {exc}")
+        print(f"  Hint: {exc.diagnostic.hint}")
+        return 1
+    except ParseError as exc:
+        info = classify_error(str(exc))
+        print(f"TIRAN ERROR [{info.code}]: {exc}")
+        print(f"  Hint: {info.hint}")
+        return 1
+    except OSError as exc:
+        info = classify_error(str(exc))
+        print(f"TIRAN ERROR [E5001]: {exc}")
+        print(f"  Hint: {info.hint}")
         return 1
 
 
