@@ -20,6 +20,20 @@ end""")
         with self.assertRaises(ParseError):
             parse_tiran("convert luau\nend")
 
+
+    def test_expression_ast(self):
+        program = parse_tiran('convert luau\nlet values = [1, 2, 3]\nlet player = game.Players.LocalPlayer\n')
+        first = program.nodes[0].expression
+        self.assertEqual(first.kind, "list")
+        self.assertEqual(len(first.children), 3)
+        second = program.nodes[1].expression
+        self.assertEqual(second.kind, "member")
+        self.assertEqual(second.value, "LocalPlayer")
+
+    def test_expression_parser_rejects_bad_syntax(self):
+        with self.assertRaises(ParseError):
+            parse_tiran("convert luau\nlet value = 1 + * 2")
+
     def test_target_mismatch(self):
         with self.assertRaises(TiranError):
             compile_tiran('convert luau\nsay "x"', target="python")
