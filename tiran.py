@@ -254,11 +254,13 @@ class Compiler:
             self.emit("return" + ((" " + rendered) if rendered else "") + suffix)
             return True
 
-        match = re.fullmatch(r"call\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\((.*)\)", line)
+        match = re.fullmatch(r"call\s+(.+)", line)
         if match:
-            rendered = self.expression(node, match.group(2))
+            if not isinstance(node.expression, Expr):
+                raise TiranError(f"Line {n}: call requires an expression.")
+            rendered = lower_expr(node.expression, self.target)
             suffix = ";" if self.target in {"java", "csharp"} else ""
-            self.emit(f"{match.group(1)}({rendered}){suffix}")
+            self.emit(f"{rendered}{suffix}")
             return True
 
         return False
