@@ -23,7 +23,7 @@ TIRAN includes:
 - Imports/modules and cross-target try/catch syntax
 - A built-in formatter, syntax checker, and AST inspection mode
 - Roblox/Luau helpers for Parts, folders, models, remotes, services, events, waiting, and destruction
-- An exactly **11,000-function standard library**
+- An exactly **22,000-function standard library**
 - Stable compiler diagnostic codes with actionable hints in `docs/ERROR_CODES.md`
 - Deterministic compiler errors with source line numbers and target validation
 - Examples, tests, and GitHub Actions CI
@@ -33,7 +33,7 @@ TIRAN includes:
 
 The file tiran_stdlib.py contains exactly 22,000 registered callable built-ins.
 
-They are real Python callables, not empty placeholders. The library has core operations, parameterized operations, transforms, and named operation pipelines. Every registered name is documented in `docs/BUILTINS.md`.
+They are real Python callables, not empty placeholders. The library has core operations, parameterized operations, transforms, and named operation pipelines. The original 11,000 names are documented in `docs/BUILTINS.md`; the additional 11,000 are documented in `docs/BUILTINS_EXTRA_01.md` through `docs/BUILTINS_EXTRA_11.md`. See `docs/BUILTINS_V2.md` for the complete index.
 
 Examples:
 
