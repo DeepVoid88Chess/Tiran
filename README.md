@@ -1,8 +1,8 @@
-# TIRAN
+ # TIRAN
 
-**TIRAN - Designed to make coding easier.**
+**TIRAN - a readable multi-target programming language.**
 
-TIRAN is a readable source language and dependency-free transpiler. You write TIRAN once, select a target language, and TIRAN produces real source code.
+TIRAN is a readable, dependency-free programming language with a compiler that can generate source for multiple targets. The project is designed around a small, understandable language core, deterministic diagnostics, and a growing standard library.
 
 ## Current release
 
@@ -12,10 +12,10 @@ TIRAN includes:
 - Luau, Lua, Python, JavaScript, TypeScript, Java, C#, and HTML targets
 - Variables, assignment, expressions, conditionals, loops, functions, calls, returns, break, and continue
 - Imports/modules and cross-target try/catch syntax
-- A built-in TIRAN formatter
+- A built-in formatter, syntax checker, and AST inspection mode
 - Roblox/Luau helpers for Parts, folders, models, remotes, services, events, waiting, and destruction
 - An exactly **11,000-function standard library**
-- Deterministic compiler errors with source line numbers
+- Deterministic compiler errors with source line numbers and target validation
 - Examples, tests, and GitHub Actions CI
 - No third-party Python dependencies
 
@@ -158,4 +158,4 @@ Run the test suite:
 
 TIRAN only claims features that are implemented and tested. Target-specific operations produce clear compiler errors instead of silently generating fake code.
 
-**TIRAN - Designed to make coding easier.**
+**TIRAN - readable code, explicit compilation, many targets.**
