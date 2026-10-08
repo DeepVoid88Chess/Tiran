@@ -158,9 +158,14 @@ class Compiler:
             d=len(self.blocks)-1; self.emit("else" if self.target in {"luau","lua"} else "else:" if self.target=="python" else "} else {",d); return
         if line=="end":
             if not self.blocks: raise TiranError(f"Line {n}: unexpected end.")
-            self.blocks.pop()
-            if self.target in {"luau","lua"}:\n                if self.blocks[-1]=="try" and self.target=="luau": self.emit("end)",len(self.blocks)-1)\n                else: self.emit("end",len(self.blocks))
-            elif self.target!="python": self.emit("}",len(self.blocks))
+            kind=self.blocks.pop()
+            if self.target in {"luau","lua"}:
+                if kind=="try" and self.target=="luau":
+                    self.emit("end)",len(self.blocks))
+                else:
+                    self.emit("end",len(self.blocks))
+            elif self.target!="python":
+                self.emit("}",len(self.blocks))
             return
         if line in {"break","continue"}:
             if self.target=="html": raise TiranError(f"Line {n}: {line} is not supported by the HTML target.")
