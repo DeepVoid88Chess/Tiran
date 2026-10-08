@@ -165,6 +165,18 @@ call list_take([1, 2, 3], 2)
         self.assertIn('__tiran_builtin("text_trim_then_upper")("  tiran  ")', out)
         self.assertIn('__tiran_builtin("list_take")([1, 2, 3])', out)
 
+    def test_compiled_python_executes_tiran_builtins(self):
+        source = """convert python
+let added = number_add(10, 5)
+let cleaned = text_trim_then_upper("  tiran  ")
+let picked = list_take([1, 2, 3], 2)
+"""
+        namespace = {}
+        exec(compile_tiran(source), namespace)
+        self.assertEqual(namespace["added"], 15)
+        self.assertEqual(namespace["cleaned"], "TIRAN")
+        self.assertEqual(namespace["picked"], [1, 2])
+
     def test_stdlib_missing_name(self):
         with self.assertRaises(KeyError):
             get_builtin("not_a_real_builtin")
