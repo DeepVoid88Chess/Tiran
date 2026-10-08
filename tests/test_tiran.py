@@ -191,7 +191,8 @@ let picked = list_take([1, 2, 3], 2)
 
     def test_compiler_error_has_code_and_hint(self):
         with self.assertRaises(TiranError) as caught:
-            compile_tiran("convert wat\\nsay 1")
+            compile_tiran("""convert wat
+say 1""")
         self.assertEqual(caught.exception.code, "E2001")
         self.assertTrue(caught.exception.diagnostic.hint)
 
