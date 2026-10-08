@@ -145,6 +145,7 @@ Run the test suite:
         hello.tiran
         control_flow.tiran
         roblox.tiran
+        roblox_game.tiran
       tests/
         test_tiran.py
       .github/
