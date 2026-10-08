@@ -41,6 +41,27 @@ end""")
     def test_luau(self):
         self.assertIn('print("Hello")', compile_tiran('convert luau\nsay "Hello"'))
 
+    def test_ast_expression_lowering(self):
+        source = """convert luau
+let values = [1, 2, 3]
+let profile = {"name": "Jackson", "level": 5}
+let score = values[0] + values[1] * 2
+let player = game.Players.LocalPlayer
+"""
+        out = compile_tiran(source)
+        self.assertIn("local values = {1, 2, 3}", out)
+        self.assertIn('local profile = {["name"] = "Jackson", ["level"] = 5}', out)
+        self.assertIn("local score = (values[0] + (values[1] * 2))", out)
+        self.assertIn("local player = game.Players.LocalPlayer", out)
+
+    def test_multi_argument_call_uses_ast(self):
+        out = compile_tiran('convert luau\ncall math.max(1, 2, 3)')
+        self.assertIn("math.max(1, 2, 3)", out)
+
+    def test_expression_target_lowering(self):
+        out = compile_tiran('convert python\nlet ok = true and not false\nlet power = 2 ^ 3')
+        self.assertIn("ok = (True and (notFalse))", out)
+        self.assertIn("power = (2 ** 3)", out)
     def test_python_loop(self):
         out=compile_tiran('convert python\nlet n = 2\nrepeat n:\n    say "x"\nend')
         self.assertIn('for _ in range(n):',out)
