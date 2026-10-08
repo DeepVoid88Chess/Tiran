@@ -95,7 +95,7 @@ def lower_expr(node: Expr, target: str) -> str:
         value = lower_expr(node.children[0], target)
         op = node.value or ""
         if op == "not":
-            op = "not" if target in {"luau", "lua", "python"} else "!"
+            op = "not " if target in {"luau", "lua", "python"} else "!"
         return f"({op}{value})"
 
     if kind == "binary":
