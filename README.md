@@ -9,7 +9,7 @@ TIRAN is a readable, dependency-free programming language with a compiler that c
 The Python target can call any registered TIRAN built-in directly by name. For
 example, `number_add(10, 5)` compiles to a call through
 `tiran_stdlib.get_builtin`. Keep `tiran_stdlib.py` alongside generated Python
-when the script uses TIRAN built-ins. The 11,000-entry registry is available
+when the script uses TIRAN built-ins. The 22,000-entry registry is available
 through `get_builtin(name)` in Python; the compiler currently wires these
 calls into generated Python, not yet into standalone Luau output.
 
@@ -24,13 +24,14 @@ TIRAN includes:
 - A built-in formatter, syntax checker, and AST inspection mode
 - Roblox/Luau helpers for Parts, folders, models, remotes, services, events, waiting, and destruction
 - An exactly **11,000-function standard library**
+- Stable compiler diagnostic codes with actionable hints in `docs/ERROR_CODES.md`
 - Deterministic compiler errors with source line numbers and target validation
 - Examples, tests, and GitHub Actions CI
 - No third-party Python dependencies
 
-## 11,000 built-ins
+## 22,000 built-ins
 
-The file tiran_stdlib.py contains exactly 11,000 registered callable built-ins.
+The file tiran_stdlib.py contains exactly 22,000 registered callable built-ins.
 
 They are real Python callables, not empty placeholders. The library has core operations, parameterized operations, transforms, and named operation pipelines. Every registered name is documented in `docs/BUILTINS.md`.
 
@@ -43,7 +44,7 @@ Examples:
     get_builtin("text_prefix")("TIRAN", 4) # TIRA
     get_builtin("list_take")([1,2,3], 2)   # [1, 2]
 
-The registry deliberately avoids baked-in numeric suffix names such as `number_add_5`; parameters belong in function arguments. The 11,000 names are documented in `docs/BUILTINS.md`.
+The registry deliberately avoids baked-in numeric suffix names such as `number_add_5`; parameters belong in function arguments. The original 11,000 names are documented in `docs/BUILTINS.md`; the additional 11,000 are documented in `docs/BUILTINS_EXTRA_01.md` through `docs/BUILTINS_EXTRA_11.md`. The complete index is `docs/BUILTINS_V2.md`.
 
 ## Language
 
