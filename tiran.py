@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse, re, sys
 from pathlib import Path
 
-TARGETS={"luau":".luau","lua":".lua","python":".py","javascript":".js","typescript":".ts","java":".java","csharp":".cs"}
+TARGETS={"luau":".luau","lua":".lua","python":".py","javascript":".js","typescript":".ts","java":".java","csharp":".cs","html":".html"}
 ALIASES={"js":"javascript","ts":"typescript","cs":"csharp"}
 
 class TiranError(ValueError): pass
@@ -44,10 +44,17 @@ class Compiler:
         self.lines.append("    "*d+text)
     def say(self,v):
         v=expr(v,self.target)
-        if self.target in {"luau","lua","python","javascript","typescript"}: self.emit(f"print({v})")
+        if self.target=="html":
+            if len(v)>=2 and v[0]==v[-1] and v[0] in {"\\\"","\\\'"}:
+                text=v[1:-1].replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+                self.emit(f"<p>{text}</p>")
+            else:
+                raise TiranError("HTML target supports literal say statements only.")
+        elif self.target in {"luau","lua","python","javascript","typescript"}: self.emit(f"print({v})")
         elif self.target=="java": self.emit(f"System.out.println({v});")
         else: self.emit(f"Console.WriteLine({v});")
     def assign(self,name,value,line):
+        if self.target=="html": raise TiranError(f"Line {line}: variables are not supported by the HTML target.")
         valid_name(name,line); value=expr(value,self.target); new=name not in self.declared
         if self.target in {"luau","lua"}: self.emit(("local " if new else "")+f"{name} = {value}")
         elif self.target=="python": self.emit(f"{name} = {value}")
@@ -55,6 +62,7 @@ class Compiler:
         else: self.emit(("var " if new else "")+f"{name} = {value};")
         self.declared.add(name)
     def begin(self,kind,head,line):
+        if self.target=="html": raise TiranError(f"Line {line}: control flow is not supported by the HTML target.")
         h=expr(head,self.target)
         if kind=="if":
             self.emit(f"if {h} then" if self.target in {"luau","lua"} else f"if {h}:" if self.target=="python" else f"if ({h}) {{")
@@ -66,6 +74,7 @@ class Compiler:
             self.emit(f"while {h} do" if self.target in {"luau","lua"} else f"while {h}:" if self.target=="python" else f"while ({h}) {{")
         self.blocks.append(kind)
     def function(self,text,line):
+        if self.target=="html": raise TiranError(f"Line {line}: functions are not supported by the HTML target.")
         m=re.fullmatch(r"([A-Za-z_]\w*)\((.*)\)",text.strip())
         if not m: raise TiranError(f"Line {line}: use function name(args):")
         name=valid_name(m.group(1),line); args=[valid_name(x.strip(),line) for x in m.group(2).split(",") if x.strip()]
@@ -91,14 +100,20 @@ class Compiler:
             d=len(self.blocks)-1
             self.emit("else" if self.target in {"luau","lua"} else "else:" if self.target=="python" else "} else {",d); return
         if line=="end":
+            if self.target=="html": raise TiranError(f"Line {n}: end is not valid for the HTML target.")
             if not self.blocks: raise TiranError(f"Line {n}: unexpected end.")
             self.blocks.pop()
             if self.target in {"luau","lua"}: self.emit("end",len(self.blocks))
             elif self.target!="python": self.emit("}",len(self.blocks))
             return
-        if line=="break": return self.emit("break; " if self.target in {"java","csharp"} else "break")
-        if line=="continue": return self.emit("continue; " if self.target in {"java","csharp"} else "continue")
+        if line=="break":
+            if self.target=="html": raise TiranError(f"Line {n}: break is not supported by the HTML target.")
+            return self.emit("break; " if self.target in {"java","csharp"} else "break")
+        if line=="continue":
+            if self.target=="html": raise TiranError(f"Line {n}: continue is not supported by the HTML target.")
+            return self.emit("continue; " if self.target in {"java","csharp"} else "continue")
         if line.startswith("return"):
+            if self.target=="html": raise TiranError(f"Line {n}: return is not supported by the HTML target.")
             v=line[6:].strip(); self.emit("return"+((" "+expr(v,self.target)) if v else "")+(";" if self.target in {"java","csharp"} else "")); return
         m=re.fullmatch(r"call\s+([A-Za-z_]\w*)\((.*)\)",line)
         if m: return self.emit(f"{m.group(1)}({m.group(2)})"+(";" if self.target in {"java","csharp"} else ""))
