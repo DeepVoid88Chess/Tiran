@@ -10,7 +10,9 @@ TIRAN includes:
 
 - A command-line compiler
 - Luau, Lua, Python, JavaScript, TypeScript, Java, C#, and HTML targets
-- Variables, assignment, conditionals, loops, functions, calls, returns, break, and continue
+- Variables, assignment, expressions, conditionals, loops, functions, calls, returns, break, and continue
+- Imports/modules and cross-target try/catch syntax
+- A built-in TIRAN formatter
 - Roblox/Luau helpers for Parts, folders, models, remotes, services, events, waiting, and destruction
 - An exactly **11,000-function standard library**
 - Deterministic compiler errors with source line numbers
@@ -113,7 +115,7 @@ This generates real Luau:
     block.Position = Vector3.new(0, 5, 0)
     block.Parent = workspace
 
-## CLI
+## Modules and error handling\n\nTIRAN supports readable module imports such as `import Inventory as Inv`, which becomes `local Inv = require(script.Parent.Inventory)` for Luau. The `try` / `catch` form maps to the closest supported target mechanism. Luau uses protected calls (`pcall`).\n\n## CLI
 
 Compile using the target in the source:
 
@@ -123,7 +125,7 @@ Or select it from the command line:
 
     python tiran.py examples/hello.tiran --target luau
 
-Write the result to a file:
+Format a TIRAN file with `--format`, or write compiled output to a file.\n\nWrite the result to a file:
 
     python tiran.py examples/hello.tiran --output hello.luau
 
